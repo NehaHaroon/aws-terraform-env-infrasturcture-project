@@ -1,13 +1,12 @@
 variable "aws_region" {
-  description = "AWS region to deploy into"
+  description = "AWS region"
   type        = string
   default     = "us-east-1"
 }
 
 variable "vpc_id" {
-  description = "Existing VPC ID (or leave blank to create new)"
+  description = "VPC to deploy into"
   type        = string
-  default     = ""
 }
 
 variable "public_subnets" {
@@ -21,16 +20,12 @@ variable "private_subnets" {
 }
 
 variable "domain_name" {
-  description = "Root domain for applications"
+  description = "Root DNS domain (Route53 zone)"
   type        = string
 }
 
-variable "app_domain" {
-  description = "Subdomain for web app"
+variable "instance_type" {
+  description = "EC2 instance type"
   type        = string
-}
-
-variable "bi_domain" {
-  description = "Subdomain for BI tool"
-  type        = string
+  default     = "t3.medium"
 }

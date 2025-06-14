@@ -1,18 +1,15 @@
-# ALB
 resource "aws_lb" "app_lb" {
   name               = "app-alb"
   internal           = false
   load_balancer_type = "application"
-  security_groups    = [aws_security_group.ec2_sg.id]
+  security_groups    = [aws_security_group.alb_sg.id]
   subnets            = var.public_subnets
 }
 
-# Listeners
 resource "aws_lb_listener" "http" {
   load_balancer_arn = aws_lb.app_lb.arn
   port              = 80
   protocol          = "HTTP"
-
   default_action {
     type             = "redirect"
     redirect {
@@ -22,6 +19,7 @@ resource "aws_lb_listener" "http" {
     }
   }
 }
+
 resource "aws_lb_listener" "https" {
   load_balancer_arn = aws_lb.app_lb.arn
   port              = 443
