@@ -1,60 +1,101 @@
-variable "region" {
-  default = "us-east-2"
+provider "aws" {
+  region = var.region
 }
 
-variable "ami_id" {
-  default = "ami-0dc3a08bd93f84a35" # Amazon Linux 2 
+# VPC
+resource "aws_vpc" "main_vpc" {
+  cidr_block           = "10.0.0.0/16"
+  enable_dns_hostnames = true
+  tags = {
+    Name = "main-vpc"
+  }
 }
 
-variable "instance_type" {
-  default = "t2.micro"
+# Public Subnet 1
+resource "aws_subnet" "public_subnet_1" {
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = "10.0.1.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${var.region}a"
+
+  tags = {
+    Name = "public-subnet-1"
+  }
 }
 
-variable "key_name" {
-  default = "testkey"
-  description = "Name of the SSH key pair to use for the instance."
+# Public Subnet 2
+resource "aws_subnet" "public_subnet_2" {
+  vpc_id                  = aws_vpc.main_vpc.id
+  cidr_block              = "10.0.2.0/24"
+  map_public_ip_on_launch = true
+  availability_zone       = "${var.region}b"
+
+  tags = {
+    Name = "public-subnet-2"
+  }
 }
 
-# variable "vpc_id" {
-#     description = "The ID of the VPC where resources will be created."
-#     type        = string
-# }
-# variable "public_subnet_ids" {
-#   type = list(string)
-# }
+# Private Subnet 1 (For RDS)
+resource "aws_subnet" "private_subnet_1" {
+  vpc_id            = aws_vpc.main_vpc.id
+  cidr_block        = "10.0.3.0/24"
+  availability_zone = "${var.region}a"
 
-# RDS Credentials
-variable "db_username" {
-  description = "Master username for RDS instances"
-  type        = string
-  default     = "neha"
+  tags = {
+    Name = "private-subnet-1"
+  }
 }
 
-variable "db_password" {
-  description = "Master password for RDS instances"
-  type        = string
-  default     = "Abc75000"
+# Private Subnet 2 (For RDS)
+resource "aws_subnet" "private_subnet_2" {
+  vpc_id            = aws_vpc.main_vpc.id
+  cidr_block        = "10.0.4.0/24"
+  availability_zone = "${var.region}b"
+
+  tags = {
+    Name = "private-subnet-2"
+  }
 }
 
-variable "db_allocated_storage" {
-  description = "Storage (GB) for each RDS instance"
-  type        = number
-  default     = 5
+# Internet Gateway for Public Subnets
+resource "aws_internet_gateway" "igw" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  tags = {
+    Name = "main-igw"
+  }
 }
 
-variable "rds_engine_version_mysql" {
-  description = "MySQL engine version"
-  type        = string
-  default     = "8.0.41"
+# Route Table for Public Subnets
+resource "aws_route_table" "public_rt" {
+  vpc_id = aws_vpc.main_vpc.id
+
+  route {
+    cidr_block = "0.0.0.0/0"
+    gateway_id = aws_internet_gateway.igw.id
+  }
+
+  tags = {
+    Name = "public-rt"
+  }
 }
 
-variable "rds_engine_version_postgres" {
-  description = "PostgreSQL engine version"
-  type        = string
-  default     = "17.4"
+# Associate Public Subnets with Route Table
+resource "aws_route_table_association" "public_assoc_1" {
+  subnet_id      = aws_subnet.public_subnet_1.id
+  route_table_id = aws_route_table.public_rt.id
 }
-variable "acm_certificate_arn" {
-  description = "ARN of the ACM certificate to use for HTTPS"
-  type        = string
-  default = "arn:aws:acm:us-east-2:323869527304:certificate/dbefca87-2339-4f7a-af2e-b2d1cd2a83cd"
+
+resource "aws_route_table_association" "public_assoc_2" {
+  subnet_id      = aws_subnet.public_subnet_2.id
+  route_table_id = aws_route_table.public_rt.id
+}
+
+terraform {
+  required_providers {
+    aws = {
+      source  = "hashicorp/aws"
+      version = "~> 5.0"
+    }
+  }
 }

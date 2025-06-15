@@ -1,7 +1,0 @@
-aws_region     = "us-east-2"
-vpc_id         = "vpc-abc123"
-public_subnets = ["subnet-111aaa", "subnet-222bbb"]
-private_subnets= ["subnet-333ccc", "subnet-444ddd"]
-domain_name    = "example.com"
-app_domain     = "app.example.com"
-bi_domain      = "bi.example.com"
