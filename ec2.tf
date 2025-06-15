@@ -1,25 +1,56 @@
-resource "aws_launch_template" "app_lt" {
-  name_prefix   = "app-lt-"
-  image_id      = data.aws_ami.amzn2.id
+resource "aws_launch_template" "app_template" {
+  name_prefix   = "devops-app-"
+  image_id      = var.ami_id
   instance_type = var.instance_type
+  key_name      = var.key_name
+  tags = {
+    version = "v2"
+  }
 
-  user_data = file("${path.module}/scripts/ec2_userdata.sh")
+  user_data = filebase64("${path.module}/userdata.sh")
 
   network_interfaces {
     associate_public_ip_address = true
     security_groups             = [aws_security_group.ec2_sg.id]
+  }
+
+  lifecycle {
+    create_before_destroy = true
   }
 }
 
 resource "aws_autoscaling_group" "app_asg" {
   name                      = "app-asg"
   max_size                  = 3
-  min_size                  = 3
+  min_size                  = 1
   desired_capacity          = 3
+  # forward traffic to our new target group
+  target_group_arns = [ aws_lb_target_group.app_tg.arn ]
+  vpc_zone_identifier       =  [
+    aws_subnet.public_subnet_1.id,
+    aws_subnet.public_subnet_2.id,
+  ]
   launch_template {
-    id      = aws_launch_template.app_lt.id
+    id      = aws_launch_template.app_template.id
     version = "$Latest"
   }
-  vpc_zone_identifier = var.public_subnets
-  target_group_arns   = [aws_lb_target_group.app_tg.arn]
+  tag {
+    key                 = "Name"
+    value               = "DevOps-App-Instance"
+    propagate_at_launch = true
+  }
+}
+
+resource "aws_instance" "bi_instance" {
+  ami                    = var.ami_id
+  instance_type          = "t2.micro"
+  key_name               = var.key_name
+  subnet_id              = aws_subnet.public_subnet_1.id
+  vpc_security_group_ids = [aws_security_group.ec2_sg.id]
+
+  user_data = filebase64("${path.module}/bi_userdata.sh")
+
+  tags = {
+    Name = "metabase-bi_dashboard"
+  }
 }

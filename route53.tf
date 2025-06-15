@@ -1,10 +1,15 @@
-resource "aws_route53_record" "app_dns" {
-  zone_id = data.aws_route53_zone.main.zone_id
-  name    = var.domain_name
+data "aws_route53_zone" "primary" {
+  name         = "sky98.store."
+  private_zone = false
+}
+resource "aws_route53_record" "app_alias" {
+  zone_id = data.aws_route53_zone.primary.zone_id
+  name    = "neha"
   type    = "A"
+
   alias {
-    name                   = aws_lb.app_lb.dns_name
-    zone_id                = aws_lb.app_lb.zone_id
+    name                   = aws_lb.app_alb.dns_name
+    zone_id                = aws_lb.app_alb.zone_id
     evaluate_target_health = true
   }
 }
